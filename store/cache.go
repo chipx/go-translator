@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"github.com/chipx/go-transaltor/datasource"
+	"github.com/chipx/go-translator/datasource"
 	"github.com/go-redis/redis"
 	"sync"
 	"time"

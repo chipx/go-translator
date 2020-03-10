@@ -2,7 +2,7 @@ package transaltor
 
 import (
 	"fmt"
-	"github.com/chipx/go-transaltor/store"
+	"github.com/chipx/go-translator/store"
 	"github.com/sirupsen/logrus"
 )
 

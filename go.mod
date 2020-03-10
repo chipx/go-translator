@@ -1,4 +1,4 @@
-module github.com/chipx/go-transaltor
+module github.com/chipx/go-translator
 
 go 1.13
 
