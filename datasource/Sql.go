@@ -3,8 +3,8 @@ package datasource
 import (
 	"database/sql"
 	"fmt"
+	"go-transaltor/internal"
 	"time"
-	"transaltor/internal"
 )
 
 func NewSqlDataSource(db *sql.DB, tableName string) *Sql {

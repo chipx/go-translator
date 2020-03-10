@@ -2,9 +2,9 @@ package store
 
 import (
 	"fmt"
+	"go-transaltor/datasource"
+	"go-transaltor/internal"
 	"sync"
-	"transaltor/datasource"
-	"transaltor/internal"
 )
 
 func NewMemoryStore(source datasource.DataSource) (*Memory, error) {

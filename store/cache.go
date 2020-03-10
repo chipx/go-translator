@@ -3,9 +3,9 @@ package store
 import (
 	"fmt"
 	"github.com/go-redis/redis"
+	"go-transaltor/datasource"
 	"sync"
 	"time"
-	"transaltor/datasource"
 )
 
 func NewRedisStore(redis *redis.Client, source datasource.DataSource) (*Redis, error) {

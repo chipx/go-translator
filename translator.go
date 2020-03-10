@@ -3,7 +3,7 @@ package transaltor
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"transaltor/store"
+	"go-transaltor/store"
 )
 
 var defaultStore store.Store

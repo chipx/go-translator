@@ -1,8 +1,8 @@
 package datasource
 
 import (
+	"go-transaltor/internal"
 	"time"
-	"transaltor/internal"
 )
 
 type DataSource interface {

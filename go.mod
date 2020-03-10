@@ -1,4 +1,4 @@
-module transaltor
+module go-transaltor
 
 go 1.13
 

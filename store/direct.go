@@ -2,8 +2,8 @@ package store
 
 import (
 	"fmt"
+	"go-transaltor/datasource"
 	"sync"
-	"transaltor/datasource"
 )
 
 func NewDirectStore(source datasource.DataSource) *Direct {
