@@ -1,7 +1,7 @@
 package datasource
 
 import (
-	"go-transaltor/internal"
+	"github.com/chipx/go-transaltor/internal"
 	"time"
 )
 

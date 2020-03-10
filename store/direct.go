@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"go-transaltor/datasource"
+	"github.com/chipx/go-transaltor/datasource"
 	"sync"
 )
 

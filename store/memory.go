@@ -2,8 +2,8 @@ package store
 
 import (
 	"fmt"
-	"go-transaltor/datasource"
-	"go-transaltor/internal"
+	"github.com/chipx/go-transaltor/datasource"
+	"github.com/chipx/go-transaltor/internal"
 	"sync"
 )
 

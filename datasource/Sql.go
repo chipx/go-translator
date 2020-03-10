@@ -3,7 +3,7 @@ package datasource
 import (
 	"database/sql"
 	"fmt"
-	"go-transaltor/internal"
+	"github.com/chipx/go-transaltor/internal"
 	"time"
 )
 

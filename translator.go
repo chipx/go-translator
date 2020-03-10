@@ -2,8 +2,8 @@ package transaltor
 
 import (
 	"fmt"
+	"github.com/chipx/go-transaltor/store"
 	"github.com/sirupsen/logrus"
-	"go-transaltor/store"
 )
 
 var defaultStore store.Store
