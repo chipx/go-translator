@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+service Translator {
+    rpc Get (TranslateRequest) returns (SimpleResponse);
+    rpc GetAll (GetAllRequest) returns (GetAllResponse);
+    rpc GetLastModified(SimpleRequest) returns (google.protobuf.Timestamp);
+    rpc MarkAsUntranslated (TranslateRequest) returns (SimpleResponse);
+}
+
+message SimpleRequest {
+
+}
+
+message SimpleResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message TranslateRequest {
+    string lang = 1;
+    string key = 2;
+}
+
+message GetAllRequest {
+    string keyPrefix = 1;
+    google.protobuf.Timestamp since = 2;
+    repeated string langs = 3;
+    int32 trunslated = 4;
+    int32 limit = 5;
+    int32 page = 6;
+}
+
+message GetAllResponse {
+    repeated Vocabulary list = 1;
+}
+
+message Translate {
+    string lang = 1;
+    string key = 2;
+    string message = 3;
+}
+
+message Vocabulary {
+    string lang = 1;
+    repeated Translate data = 2;
+}

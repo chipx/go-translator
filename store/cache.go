@@ -8,10 +8,16 @@ import (
 	"time"
 )
 
-func NewRedisStore(redis *redis.Client, source datasource.DataSource) (*Redis, error) {
+func NewRedisStore(redis *redis.Client, source datasource.DataSource, updatePeriod time.Duration) (*Redis, error) {
 	store := &Redis{redis: redis, source: source}
 	store.update()
-	store.mutex = sync.RWMutex{}
+	go func() {
+		ticker := time.NewTicker(updatePeriod)
+		for {
+			<-ticker.C
+			store.update()
+		}
+	}()
 
 	return store, nil
 }
@@ -32,11 +38,13 @@ func (r *Redis) update() error {
 	defer r.mutex.Unlock()
 
 	lastModified := r.getLastModified()
-	if !r.source.GetLastModified().After(lastModified) {
+
+	modifiedFromSource := r.source.GetLastModified()
+	if !modifiedFromSource.After(lastModified) {
 		return nil
 	}
 
-	data, err := r.source.LoadLast(lastModified)
+	data, err := r.source.LoadAll(datasource.Criteria{Since: lastModified})
 	if err != nil {
 		return err
 	}
@@ -46,6 +54,8 @@ func (r *Redis) update() error {
 			r.set(lang, key, message)
 		}
 	}
+
+	r.redis.Set(lastModifiedKey, modifiedFromSource.Unix(), 0)
 
 	return nil
 }
@@ -60,12 +70,12 @@ func (r *Redis) getLastModified() time.Time {
 	return time.Unix(unixTimeSec, 0)
 }
 
-func (r *Redis) set(lang string, key string, data interface{}) error {
+func (r *Redis) set(lang string, key string, data string) error {
 	storeKey := fmt.Sprintf(itemKeyTemplate, lang, key)
 	return r.redis.Set(storeKey, data, 0).Err()
 }
 
-func (r *Redis) Get(lang string, key string) (interface{}, error) {
+func (r *Redis) Get(lang string, key string) (string, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
@@ -77,7 +87,7 @@ func (r *Redis) Get(lang string, key string) (interface{}, error) {
 
 	msg, err = r.source.Get(lang, key)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	r.set(lang, key, msg)
@@ -85,11 +95,11 @@ func (r *Redis) Get(lang string, key string) (interface{}, error) {
 	return msg, nil
 }
 
-func (r *Redis) Set(lang string, key string, data interface{}) error {
+func (r *Redis) Set(lang string, key string, data string) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	if err := r.source.Set(lang, key, data.(string)); err != nil {
+	if err := r.source.Set(lang, key, data); err != nil {
 		return err
 	}
 

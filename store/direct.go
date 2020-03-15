@@ -18,7 +18,7 @@ type Direct struct {
 	mutex  sync.RWMutex
 }
 
-func (m *Direct) Get(lang string, key string) (interface{}, error) {
+func (m *Direct) Get(lang string, key string) (string, error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
@@ -27,14 +27,14 @@ func (m *Direct) Get(lang string, key string) (interface{}, error) {
 		return data, nil
 	}
 
-	return nil, fmt.Errorf(ErrorStoreDataNotFound)
+	return "", fmt.Errorf(ErrorStoreDataNotFound)
 }
 
-func (m *Direct) Set(lang string, key string, data interface{}) error {
+func (m *Direct) Set(lang string, key string, data string) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	err := m.source.Set(lang, key, data.(string))
+	err := m.source.Set(lang, key, data)
 	if err != nil {
 		return err
 	}

@@ -16,16 +16,8 @@ func Translate(lang string, message string) string {
 	storedTranslate, err := defaultStore.Get(lang, message)
 	if err != nil {
 		logrus.WithError(err).Warningf("Get message %s:%s from store failed", lang, message)
-	}
-
-	if storedTranslate != nil {
-		switch res := storedTranslate.(type) {
-		case string:
-			return res
-		default:
-			logrus.Errorf("Can not translate cached message (%v) of type %T", storedTranslate, res)
-			return message
-		}
+	} else if storedTranslate != "" {
+		return storedTranslate
 	}
 
 	if err := defaultStore.MarkAsUntranslated(lang, message); err != nil {
