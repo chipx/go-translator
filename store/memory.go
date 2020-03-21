@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/chipx/go-translator/datasource"
 	"github.com/chipx/go-translator/internal"
-	log "github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
@@ -18,7 +17,6 @@ func NewMemoryStore(source datasource.DataSource, updatePeriod time.Duration) (*
 	}
 
 	if updatePeriod > 0 {
-		lastModifiedFromSource := source.GetLastModified()
 		go func() {
 			ticker := time.NewTicker(updatePeriod)
 			for {
