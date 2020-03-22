@@ -7,6 +7,7 @@ service Translator {
     rpc GetAll (GetAllRequest) returns (GetAllResponse);
     rpc GetLastModified(SimpleRequest) returns (google.protobuf.Timestamp);
     rpc MarkAsUntranslated (TranslateRequest) returns (SimpleResponse);
+    rpc Set (SetTranslateRequest) returns (SimpleResponse);
 }
 
 message SimpleRequest {
@@ -21,6 +22,12 @@ message SimpleResponse {
 message TranslateRequest {
     string lang = 1;
     string key = 2;
+}
+
+message SetTranslateRequest {
+    string lang = 1;
+    string key = 2;
+    string message = 3;
 }
 
 message GetAllRequest {

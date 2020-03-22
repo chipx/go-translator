@@ -35,17 +35,19 @@ type apiDataSource struct {
 	opts      []grpc.DialOption
 	client    api.TranslatorClient
 	keepAlive time.Duration
-	connMutex sync.RWMutex
+	connMutex sync.Mutex
 	wg        sync.WaitGroup
 }
 
 func (a *apiDataSource) getClient() api.TranslatorClient {
+	a.connMutex.Lock()
+	defer a.connMutex.Unlock()
+
+	a.wg.Add(1)
+
 	if a.client != nil {
 		return a.client
 	}
-
-	a.connMutex.Lock()
-	defer a.connMutex.Unlock()
 
 	conn, err := grpc.Dial(a.path, a.opts...)
 	if err != nil {
@@ -79,9 +81,6 @@ func (a *apiDataSource) getClient() api.TranslatorClient {
 }
 
 func (a *apiDataSource) LoadAll(criteria Criteria) (map[string]*internal.Vocabulary, error) {
-	a.connMutex.RLock()
-	a.wg.Add(1)
-	a.connMutex.RUnlock()
 	defer a.wg.Done()
 
 	client := a.getClient()
@@ -144,9 +143,6 @@ func (a *apiDataSource) LoadAll(criteria Criteria) (map[string]*internal.Vocabul
 	return ctl, nil
 }
 func (a *apiDataSource) GetLastModified() time.Time {
-	a.connMutex.RLock()
-	a.wg.Add(1)
-	a.connMutex.RUnlock()
 	defer a.wg.Done()
 
 	client := a.getClient()
@@ -163,9 +159,6 @@ func (a *apiDataSource) GetLastModified() time.Time {
 	return time.Unix(modifiedTime.Seconds, 0)
 }
 func (a *apiDataSource) Get(lang string, key string) (string, error) {
-	a.connMutex.RLock()
-	a.wg.Add(1)
-	a.connMutex.RUnlock()
 	defer a.wg.Done()
 
 	client := a.getClient()
@@ -187,7 +180,24 @@ func (a *apiDataSource) Get(lang string, key string) (string, error) {
 }
 
 func (a *apiDataSource) Set(lang string, key string, msg string) error {
-	log.Errorf("Set translate for remote data source not implemented")
+	defer a.wg.Done()
+
+	client := a.getClient()
+	if client == nil {
+		return ErrorApiClientNotInitialized
+	}
+
+	_, err := client.Set(context.Background(), &api.SetTranslateRequest{
+		Lang:    lang,
+		Key:     key,
+		Message: msg,
+	})
+
+	if err != nil {
+		log.WithError(err).Errorf("Set for lang %s by key %s failed", lang, key)
+		return ErrorApiRequest
+	}
+
 	return nil
 }
 func (a *apiDataSource) Delete(lang string, key string) error {
@@ -195,9 +205,6 @@ func (a *apiDataSource) Delete(lang string, key string) error {
 	return nil
 }
 func (a *apiDataSource) MarkAsUntranslated(lang string, key string) error {
-	a.connMutex.RLock()
-	a.wg.Add(1)
-	a.connMutex.RUnlock()
 	defer a.wg.Done()
 
 	client := a.getClient()

@@ -1,6 +1,7 @@
 package datasource
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/chipx/go-translator/internal"
@@ -11,7 +12,7 @@ import (
 )
 
 func NewSqlDataSource(db *sqlx.DB, tableName string, updateLastModifiedPeriod time.Duration) DataSource {
-	source := &sql{
+	source := &sqlDatasource{
 		db:        db,
 		tableName: tableName,
 	}
@@ -44,13 +45,13 @@ type tableRow struct {
 	Translated int
 }
 
-type sql struct {
+type sqlDatasource struct {
 	db           *sqlx.DB
 	tableName    string
 	lastModified time.Time
 }
 
-func (s *sql) LoadAll(criteria Criteria) (map[string]*internal.Vocabulary, error) {
+func (s *sqlDatasource) LoadAll(criteria Criteria) (map[string]*internal.Vocabulary, error) {
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return nil, err
@@ -112,7 +113,7 @@ func (s *sql) LoadAll(criteria Criteria) (map[string]*internal.Vocabulary, error
 	return ctl, nil
 }
 
-func (s *sql) buildSearchQuery(criteria Criteria) (string, map[string]interface{}) {
+func (s *sqlDatasource) buildSearchQuery(criteria Criteria) (string, map[string]interface{}) {
 	queryParams := make(map[string]interface{})
 	var where []string
 
@@ -154,17 +155,21 @@ func (s *sql) buildSearchQuery(criteria Criteria) (string, map[string]interface{
 	return queryStr, queryParams
 }
 
-func (s *sql) updateLastModified() {
+func (s *sqlDatasource) updateLastModified() {
 	row := s.db.QueryRow(fmt.Sprintf("SELECT MAX(modified_at) FROM \"%s\"", s.tableName))
-	if err := row.Scan(&s.lastModified); err != nil {
+	var timeResult sql.NullTime
+	if err := row.Scan(&timeResult); err != nil {
 		log.WithError(err).Error("Update last modified failed")
+	}
+	if timeResult.Valid {
+		s.lastModified = timeResult.Time
 	}
 }
 
-func (s *sql) GetLastModified() time.Time {
+func (s *sqlDatasource) GetLastModified() time.Time {
 	return s.lastModified
 }
-func (s *sql) Get(lang string, key string) (msg string, err error) {
+func (s *sqlDatasource) Get(lang string, key string) (msg string, err error) {
 	rows, err := s.db.NamedQuery(fmt.Sprintf(
 		"SELECT message FROM \"%s\" WHERE lang=:lang AND key=:key LIMIT 1",
 		s.tableName,
@@ -186,7 +191,7 @@ func (s *sql) Get(lang string, key string) (msg string, err error) {
 	return
 }
 
-func (s *sql) Set(lang string, key string, msg string) (err error) {
+func (s *sqlDatasource) Set(lang string, key string, msg string) (err error) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -207,7 +212,7 @@ func (s *sql) Set(lang string, key string, msg string) (err error) {
 	return s.update(lang, key, msg)
 }
 
-func (s *sql) create(lang string, key string, msg string, translated Translated) error {
+func (s *sqlDatasource) create(lang string, key string, msg string, translated Translated) error {
 	modifyTime := time.Now()
 	_, err := s.db.NamedExec(
 		fmt.Sprintf("INSERT INTO \"%s\" (lang, key, message, modified_at, translated) VALUES (:lang, :key, :message, :modified_at, :translated)", s.tableName),
@@ -226,14 +231,15 @@ func (s *sql) create(lang string, key string, msg string, translated Translated)
 
 	return err
 }
-func (s *sql) update(lang string, key string, msg string) error {
+func (s *sqlDatasource) update(lang string, key string, msg string) error {
 	modifyTime := time.Now()
 	_, err := s.db.NamedExec(
-		fmt.Sprintf("UPDATE \"%s\" SET message=:message, modified_at=:modified WHERE lang=:lang AND key=:key LIMIT 1", s.tableName),
+		fmt.Sprintf("UPDATE \"%s\" SET message=:message, modified_at=:modified_at, translated=:translated WHERE lang=:lang AND key=:key", s.tableName),
 		map[string]interface{}{
 			"lang":        lang,
 			"key":         key,
 			"message":     msg,
+			"translated":  YES,
 			"modified_at": modifyTime,
 		},
 	)
@@ -245,9 +251,9 @@ func (s *sql) update(lang string, key string, msg string) error {
 	return err
 }
 
-func (s *sql) Delete(lang string, key string) error {
+func (s *sqlDatasource) Delete(lang string, key string) error {
 	_, err := s.db.NamedExec(
-		fmt.Sprintf("DELETE FROM \"%s\" WHERE lang=:lang AND key=:key LIMIT 1", s.tableName),
+		fmt.Sprintf("DELETE FROM \"%s\" WHERE lang=:lang AND key=:key", s.tableName),
 		map[string]interface{}{
 			"lang": lang,
 			"key":  key,
@@ -257,7 +263,7 @@ func (s *sql) Delete(lang string, key string) error {
 	return err
 }
 
-func (s *sql) MarkAsUntranslated(lang string, key string) (err error) {
+func (s *sqlDatasource) MarkAsUntranslated(lang string, key string) (err error) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err

@@ -28,6 +28,13 @@ func main() {
 	}
 	transaltor.InitTranslator(tStore)
 	fmt.Println(transaltor.Translate("ru", "Hello world"))
+
+	err = apiDataSource.Set("en", "Hello world", "Hello world (EN)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(transaltor.Translate("en", "Hello world"))
+
 	ctx := grace.ShutdownContext(context.Background())
 	<-ctx.Done()
 }

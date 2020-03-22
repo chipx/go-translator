@@ -42,6 +42,6 @@ func main() {
 			grpc_ctxtags.StreamServerInterceptor(),
 			grpc_logrus.StreamServerInterceptor(log.NewEntry(log.StandardLogger())),
 		))
-	api.RegisterTranslatorServer(grpcServer, transaltor.NewApiServer(ds))
+	api.RegisterTranslatorServer(grpcServer, transaltor.NewApiServer(ds, false))
 	grpcServer.Serve(lis)
 }

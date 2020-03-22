@@ -3,7 +3,6 @@ package transaltor
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/chipx/go-translator/api"
 	"github.com/chipx/go-translator/datasource"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -13,13 +12,15 @@ import (
 
 var ErrorNotFound = errors.New("Not found translate ")
 var ErrorInternal = errors.New("Internal error ")
+var ErrorSetNotAllowed = errors.New("Set translate not allowed ")
 
-func NewApiServer(dataSource datasource.DataSource) api.TranslatorServer {
-	return &apiServer{dataSource: dataSource}
+func NewApiServer(dataSource datasource.DataSource, setAllowed bool) api.TranslatorServer {
+	return &apiServer{dataSource: dataSource, setAllowed: setAllowed}
 }
 
 type apiServer struct {
 	dataSource datasource.DataSource
+	setAllowed bool
 }
 
 func (s *apiServer) Get(ctx context.Context, req *api.TranslateRequest) (*api.SimpleResponse, error) {
@@ -77,10 +78,25 @@ func (s *apiServer) GetAll(ctx context.Context, req *api.GetAllRequest) (*api.Ge
 
 		resp.List = append(resp.List, voc)
 	}
-	fmt.Println("-------")
-	fmt.Println(resp)
-	fmt.Println("-------")
+
 	return resp, nil
+}
+
+func (s *apiServer) Set(ctx context.Context, req *api.SetTranslateRequest) (*api.SimpleResponse, error) {
+	if !s.setAllowed {
+		return nil, ErrorSetNotAllowed
+	}
+
+	err := s.dataSource.Set(req.Lang, req.Key, req.Message)
+	if err != nil {
+		log.WithError(err).Errorf("Set translate failed: %v", req)
+		return nil, ErrorInternal
+	}
+
+	return &api.SimpleResponse{
+		Success: true,
+		Message: req.Message,
+	}, nil
 }
 
 func (s *apiServer) MarkAsUntranslated(ctx context.Context, req *api.TranslateRequest) (*api.SimpleResponse, error) {
