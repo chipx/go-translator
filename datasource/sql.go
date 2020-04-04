@@ -142,7 +142,7 @@ func (s *sqlDatasource) buildSearchQuery(criteria Criteria) (string, map[string]
 		where = append(where, fmt.Sprintf("lang IN (%s)", strings.Join(langIn, ",")))
 	}
 
-	queryStr := fmt.Sprintf("SELECT id, lang, key, message, modified_at, translated FROM \"%s\"", s.tableName)
+	queryStr := fmt.Sprintf("SELECT id, lang, key, message, modified_at, translated FROM %s", s.tableName)
 	if len(where) > 0 {
 		queryStr += "\nWHERE " + strings.Join(where, " AND ")
 	}
@@ -156,7 +156,7 @@ func (s *sqlDatasource) buildSearchQuery(criteria Criteria) (string, map[string]
 }
 
 func (s *sqlDatasource) updateLastModified() {
-	row := s.db.QueryRow(fmt.Sprintf("SELECT MAX(modified_at) FROM \"%s\"", s.tableName))
+	row := s.db.QueryRow(fmt.Sprintf("SELECT MAX(modified_at) FROM %s", s.tableName))
 	var timeResult sql.NullTime
 	if err := row.Scan(&timeResult); err != nil {
 		log.WithError(err).Error("Update last modified failed")
@@ -171,7 +171,7 @@ func (s *sqlDatasource) GetLastModified() time.Time {
 }
 func (s *sqlDatasource) Get(lang string, key string) (msg string, err error) {
 	rows, err := s.db.NamedQuery(fmt.Sprintf(
-		"SELECT message FROM \"%s\" WHERE lang=:lang AND key=:key LIMIT 1",
+		"SELECT message FROM %s WHERE lang=:lang AND key=:key LIMIT 1",
 		s.tableName,
 	), map[string]interface{}{
 		"lang": lang,
@@ -215,7 +215,7 @@ func (s *sqlDatasource) Set(lang string, key string, msg string) (err error) {
 func (s *sqlDatasource) create(lang string, key string, msg string, translated Translated) error {
 	modifyTime := time.Now()
 	_, err := s.db.NamedExec(
-		fmt.Sprintf("INSERT INTO \"%s\" (lang, key, message, modified_at, translated) VALUES (:lang, :key, :message, :modified_at, :translated)", s.tableName),
+		fmt.Sprintf("INSERT INTO %s (lang, key, message, modified_at, translated) VALUES (:lang, :key, :message, :modified_at, :translated)", s.tableName),
 		map[string]interface{}{
 			"lang":        lang,
 			"key":         key,
@@ -234,7 +234,7 @@ func (s *sqlDatasource) create(lang string, key string, msg string, translated T
 func (s *sqlDatasource) update(lang string, key string, msg string) error {
 	modifyTime := time.Now()
 	_, err := s.db.NamedExec(
-		fmt.Sprintf("UPDATE \"%s\" SET message=:message, modified_at=:modified_at, translated=:translated WHERE lang=:lang AND key=:key", s.tableName),
+		fmt.Sprintf("UPDATE %s SET message=:message, modified_at=:modified_at, translated=:translated WHERE lang=:lang AND key=:key", s.tableName),
 		map[string]interface{}{
 			"lang":        lang,
 			"key":         key,
@@ -253,7 +253,7 @@ func (s *sqlDatasource) update(lang string, key string, msg string) error {
 
 func (s *sqlDatasource) Delete(lang string, key string) error {
 	_, err := s.db.NamedExec(
-		fmt.Sprintf("DELETE FROM \"%s\" WHERE lang=:lang AND key=:key", s.tableName),
+		fmt.Sprintf("DELETE FROM %s WHERE lang=:lang AND key=:key", s.tableName),
 		map[string]interface{}{
 			"lang": lang,
 			"key":  key,
